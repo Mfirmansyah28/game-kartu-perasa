@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="id" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KARTU PERASA DAN CERITA EMOSI: PETUALANGAN BAJAK LAUT</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JavaScript client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Font: Inter & Cinzel / Special Elite for Pirate feel -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', "sans-serif"],
+              pirate: ['"Cinzel"', "serif"],
+            },
+            colors: {
+              parchment: "#F4ECD8",
+              parchmentDark: "#E2D1B3",
+              pirateBrown: "#2C1A0E",
+              pirateDark: "#170C06",
+              oceanBlue: "#1E3A8A",
+              oceanLight: "#3B82F6",
+              gold: "#D97706",
+              goldLight: "#F59E0B",
+              goldGlow: "#FBBF24",
+              crimson: "#991B1B",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      /* 3D Flip Card Styles */
+      .perspective-1000 {
+        perspective: 1000px;
+      }
+      .transform-style-3d {
+        transform-style: preserve-3d;
+      }
+      .backface-hidden {
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+      .rotate-y-180 {
+        transform: rotateY(180deg);
+      }
+
+      /* Custom Textures */
+      .wood-texture {
+        background-color: #1a0f07;
+        background-image:
+          radial-gradient(
+            circle at 50% 30%,
+            rgba(180, 115, 50, 0.15),
+            transparent 70%
+          ),
+          linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)),
+          repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 40px,
+            rgba(0, 0, 0, 0.15) 40px,
+            rgba(0, 0, 0, 0.15) 80px
+          );
+      }
+
+      .map-table-bg {
+        background-color: #f1e4c3;
+        background-image:
+          radial-gradient(
+            circle at center,
+            rgba(245, 230, 195, 0.9) 0%,
+            rgba(220, 198, 155, 0.8) 70%,
+            rgba(180, 150, 100, 0.9) 100%
+          ),
+          radial-gradient(rgba(139, 94, 60, 0.12) 1px, transparent 0);
+        background-size:
+          100% 100%,
+          20px 20px;
+      }
+
+      /* Card Card Aspect Ratio & Hover Animation */
+      .card-container {
+        width: 13.5rem; /* ~216px */
+        height: 20.25rem; /* ~324px (Strict 2:3 aspect ratio) */
+        transition:
+          transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+          box-shadow 0.35s ease;
+      }
+
+      .card-container:hover {
+        transform: translateY(-12px) scale(1.02);
+        filter: drop-shadow(0 20px 25px rgba(217, 119, 6, 0.3));
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #170c06;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d97706;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body
+    class="wood-texture min-h-full text-pirateBrown font-sans flex flex-col antialiased selection:bg-gold selection:text-white"
+  >
+    <!-- App Container -->
+    <div id="app" class="flex-1 flex flex-col relative overflow-x-hidden">
+      <!-- HEADER / NAVIGATION -->
+      <header
+        class="bg-pirateDark/95 border-b-4 border-gold px-4 py-3 sticky top-0 z-50 shadow-2xl backdrop-blur-md"
+      >
+        <div
+          class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3"
+        >
+          <div class="flex items-center space-x-3">
+            <span class="text-3xl animate-pulse">🏴‍☠️</span>
+            <div>
+              <h1
+                class="font-pirate text-gold font-black text-base md:text-xl tracking-wider"
+              >
+                KARTU PERASA DAN CERITA EMOSI
+              </h1>
+              <p class="text-xs text-amber-200/90 italic font-pirate">
+                Berlayar Mengenali Emosi, Menemukan Harta dalam Diri!
+              </p>
+            </div>
+          </div>
+          <div
+            id="userNavInfo"
+            class="hidden flex items-center space-x-3 bg-black/40 border border-gold/50 px-3 py-1.5 rounded-xl"
+          >
+            <div class="text-xs text-amber-100">
+              Kru:
+              <span id="navStudentName" class="font-bold text-gold"></span>
+              (<span id="navStudentClass"></span>)
+            </div>
+            <button
+              onclick="logoutStudent()"
+              class="bg-crimson hover:bg-red-800 text-white text-xs px-2.5 py-1 rounded-lg font-semibold transition shadow"
+            >
+              Ganti Kru
+            </button>
+            <button
+              onclick="openTeacherDashboard()"
+              class="bg-gold hover:bg-amber-600 text-pirateDark text-xs px-3 py-1 rounded-lg font-bold transition shadow flex items-center gap-1"
+            >
+              <span>📜</span> Buku Kapten
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT AREA -->
+      <main
+        class="flex-1 flex flex-col items-center justify-center p-4 md:p-6 max-w-7xl mx-auto w-full"
+      >
+        <!-- VIEW 1: LOGIN / PENDAFTARAN KRU -->
+        <div
+          id="viewLogin"
+          class="w-full max-w-md bg-parchment border-4 border-gold rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden my-auto"
+        >
+          <div
+            class="absolute -top-10 -right-10 text-gold/20 text-9xl pointer-events-none select-none font-pirate"
+          >
+            🧭
+          </div>
+
+          <div class="text-center mb-6">
+            <div
+              class="inline-block bg-gold/20 p-4 rounded-full border-2 border-gold mb-2 shadow-inner"
+            >
+              <span class="text-5xl">⚓</span>
+            </div>
+            <h2
+              class="font-pirate text-2xl md:text-3xl font-extrabold text-pirateBrown"
+            >
+              PANGGILAN KAPAL
+            </h2>
+            <p class="text-xs md:text-sm text-amber-900/90 mt-1">
+              Masukkan identitas kru sebelum memulai pelayaran emosi!
+            </p>
+          </div>
+
+          <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+              <label
+                class="block text-xs font-bold uppercase tracking-wider text-pirateBrown mb-1"
+                >Nama Lengkap Kru</label
+              >
+              <input
+                type="text"
+                id="inputName"
+                required
+                placeholder="Contoh: Kapten Budi"
+                class="w-full bg-white/90 border-2 border-gold/70 rounded-xl px-4 py-3 text-pirateBrown font-semibold focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-bold uppercase tracking-wider text-pirateBrown mb-1"
+                >Kelas / Kelompok</label
+              >
+              <input
+                type="text"
+                id="inputClass"
+                required
+                placeholder="Contoh: Kelas 5B"
+                class="w-full bg-white/90 border-2 border-gold/70 rounded-xl px-4 py-3 text-pirateBrown font-semibold focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30"
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-gold via-amber-500 to-amber-600 hover:from-amber-600 hover:to-gold text-pirateDark font-pirate font-bold text-lg py-3.5 rounded-xl shadow-lg border-2 border-amber-200 transform hover:-translate-y-0.5 transition active:translate-y-0"
+            >
+              🚀 MULAI PETUALANGAN
+            </button>
+          </form>
+
+          <div class="mt-6 pt-4 border-t border-gold/30 text-center">
+            <button
+              onclick="openTeacherDashboard()"
+              class="text-xs font-bold text-pirateBrown hover:text-gold underline transition"
+            >
+              Masuk sebagai Pengajar / Guru (Buku Kapten)
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 2: PETA HARTA KARUN & SELEKSI KARTU RAPI -->
+        <div
+          id="viewDeck"
+          class="hidden w-full flex flex-col items-center py-2"
+        >
+          <!-- Deck Header Banner -->
+          <div
+            class="text-center mb-6 max-w-2xl bg-parchment border-4 border-gold p-4 md:p-5 rounded-2xl shadow-2xl relative"
+          >
+            <div
+              class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold text-pirateDark px-4 py-0.5 rounded-full font-pirate font-extrabold text-xs tracking-widest uppercase border border-amber-200 shadow"
+            >
+              MEJA PETA NAVIGASI
+            </div>
+            <h2
+              class="font-pirate text-2xl md:text-3xl font-black text-pirateBrown mt-1"
+            >
+              PILIH KARTU PERASAANMU
+            </h2>
+            <p class="text-xs md:text-sm text-amber-950 mt-1 font-medium">
+              Selamat datang di geladak,
+              <span id="displayStudentName" class="font-bold text-gold"></span>!
+              Klik salah satu dari 5 kartu di bawah untuk membuka pertanyaan
+              refleksi emosi CASEL.
+            </p>
+          </div>
+
+          <!-- Structured & Symmetric Card Deck Container -->
+          <div
+            class="map-table-bg w-full max-w-5xl border-4 border-gold rounded-3xl p-6 md:p-8 shadow-2xl relative"
+          >
+            <!-- Compass Decoration -->
+            <div
+              class="absolute top-4 right-4 text-gold/20 text-6xl pointer-events-none font-pirate"
+            >
+              🧭
+            </div>
+            <div
+              class="absolute bottom-4 left-4 text-gold/20 text-6xl pointer-events-none font-pirate"
+            >
+              ⚓
+            </div>
+
+            <!-- Layout Kartu: 3 Kartu Baris Atas, 2 Kartu Baris Bawah (Berpusat Simetris di Desktop) -->
+            <div class="flex flex-col gap-8 items-center justify-center">
+              <!-- Top Row: 3 Cards -->
+              <div
+                class="flex flex-wrap items-center justify-center gap-6 md:gap-8 w-full"
+              >
+                <!-- KARTU 1: SENANG -->
+                <div
+                  class="card-container perspective-1000 cursor-pointer"
+                  onclick="selectCard(1)"
+                >
+                  <div
+                    id="card-inner-1"
+                    class="relative w-full h-full duration-700 transform-style-3d shadow-xl rounded-2xl"
+                  >
+                    <div
+                      class="absolute inset-0 backface-hidden bg-gradient-to-b from-amber-100 via-amber-200 to-amber-300 border-4 border-gold rounded-2xl p-3.5 flex flex-col justify-between shadow-inner"
+                    >
+                      <div
+                        class="flex justify-between items-center border-b border-gold/40 pb-1.5"
+                      >
+                        <span
+                          class="bg-gold text-pirateDark font-extrabold text-[10px] px-2 py-0.5 rounded-md font-pirate tracking-wider"
+                          >KARTU 01</span
+                        >
+                        <span
+                          class="text-[10px] font-bold text-amber-900 uppercase tracking-tight"
+                          >Kesadaran Diri</span
+                        >
+                      </div>
+                      <div class="text-center my-1">
+                        <h3
+                          class="font-pirate text-lg font-black text-amber-950 tracking-wide"
+                        >
+                          SENANG
+                        </h3>
+                      </div>
+                      <div class="my-auto flex flex-col items-center">
+                        <div
+                          class="w-20 h-20 bg-amber-400 rounded-full flex items-center justify-center border-4 border-gold shadow-md"
+                        >
+                          <span class="text-4xl">🪙</span>
+                        </div>
+                        <p
+                          class="text-[11px] text-amber-950 font-semibold mt-2.5 text-center leading-tight"
+                        >
+                          Menemukan Koin Emas
+                        </p>
+                      </div>
+                      <div class="text-center border-t border-gold/40 pt-2">
+                        <span
+                          class="inline-block bg-pirateBrown text-amber-100 font-bold text-[11px] px-3 py-1 rounded-full shadow border border-gold/50"
+                        >
+                          BUKA KARTU ➔
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      class="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-b from-pirateBrown to-pirateDark border-4 border-gold rounded-2xl p-4 flex flex-col justify-center items-center text-center text-amber-100"
+                    >
+                      <span class="text-4xl mb-2">🗺️</span>
+                      <h4 class="font-pirate text-gold font-bold text-base">
+                        RAHASIA EMOSIKU
+                      </h4>
+                      <p class="text-[11px] text-amber-200/80 italic mt-1">
+                        Petualangan CASEL
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- KARTU 2: CEMAS -->
+                <div
+                  class="card-container perspective-1000 cursor-pointer"
+                  onclick="selectCard(2)"
+                >
+                  <div
+                    id="card-inner-2"
+                    class="relative w-full h-full duration-700 transform-style-3d shadow-xl rounded-2xl"
+                  >
+                    <div
+                      class="absolute inset-0 backface-hidden bg-gradient-to-b from-blue-100 via-blue-200 to-blue-300 border-4 border-gold rounded-2xl p-3.5 flex flex-col justify-between shadow-inner"
+                    >
+                      <div
+                        class="flex justify-between items-center border-b border-blue-400/40 pb-1.5"
+                      >
+                        <span
+                          class="bg-blue-800 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md font-pirate tracking-wider"
+                          >KARTU 02</span
+                        >
+                        <span
+                          class="text-[10px] font-bold text-blue-900 uppercase tracking-tight"
+                          >Manajemen Diri</span
+                        >
+                      </div>
+                      <div class="text-center my-1">
+                        <h3
+                          class="font-pirate text-lg font-black text-blue-950 tracking-wide"
+                        >
+                          CEMAS
+                        </h3>
+                      </div>
+                      <div class="my-auto flex flex-col items-center">
+                        <div
+                          class="w-20 h-20 bg-blue-400 rounded-full flex items-center justify-center border-4 border-blue-600 shadow-md"
+                        >
+                          <span class="text-4xl">🌊</span>
+                        </div>
+                        <p
+                          class="text-[11px] text-blue-950 font-semibold mt-2.5 text-center leading-tight"
+                        >
+                          Menghadapi Badai Ombak
+                        </p>
+                      </div>
+                      <div class="text-center border-t border-blue-400/40 pt-2">
+                        <span
+                          class="inline-block bg-pirateBrown text-amber-100 font-bold text-[11px] px-3 py-1 rounded-full shadow border border-gold/50"
+                        >
+                          BUKA KARTU ➔
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      class="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-b from-pirateBrown to-pirateDark border-4 border-gold rounded-2xl p-4 flex flex-col justify-center items-center text-center text-amber-100"
+                    >
+                      <span class="text-4xl mb-2">🗺️</span>
+                      <h4 class="font-pirate text-gold font-bold text-base">
+                        RAHASIA EMOSIKU
+                      </h4>
+                      <p class="text-[11px] text-amber-200/80 italic mt-1">
+                        Petualangan CASEL
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- KARTU 3: PEDULI -->
+                <div
+                  class="card-container perspective-1000 cursor-pointer"
+                  onclick="selectCard(3)"
+                >
+                  <div
+                    id="card-inner-3"
+                    class="relative w-full h-full duration-700 transform-style-3d shadow-xl rounded-2xl"
+                  >
+                    <div
+                      class="absolute inset-0 backface-hidden bg-gradient-to-b from-teal-100 via-teal-200 to-teal-300 border-4 border-gold rounded-2xl p-3.5 flex flex-col justify-between shadow-inner"
+                    >
+                      <div
+                        class="flex justify-between items-center border-b border-teal-400/40 pb-1.5"
+                      >
+                        <span
+                          class="bg-teal-800 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md font-pirate tracking-wider"
+                          >KARTU 03</span
+                        >
+                        <span
+                          class="text-[10px] font-bold text-teal-900 uppercase tracking-tight"
+                          >Kesadaran Sosial</span
+                        >
+                      </div>
+                      <div class="text-center my-1">
+                        <h3
+                          class="font-pirate text-lg font-black text-teal-950 tracking-wide"
+                        >
+                          PEDULI
+                        </h3>
+                      </div>
+                      <div class="my-auto flex flex-col items-center">
+                        <div
+                          class="w-20 h-20 bg-teal-400 rounded-full flex items-center justify-center border-4 border-teal-600 shadow-md"
+                        >
+                          <span class="text-4xl">🤝</span>
+                        </div>
+                        <p
+                          class="text-[11px] text-teal-950 font-semibold mt-2.5 text-center leading-tight"
+                        >
+                          Membantu Teman Skuad
+                        </p>
+                      </div>
+                      <div class="text-center border-t border-teal-400/40 pt-2">
+                        <span
+                          class="inline-block bg-pirateBrown text-amber-100 font-bold text-[11px] px-3 py-1 rounded-full shadow border border-gold/50"
+                        >
+                          BUKA KARTU ➔
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      class="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-b from-pirateBrown to-pirateDark border-4 border-gold rounded-2xl p-4 flex flex-col justify-center items-center text-center text-amber-100"
+                    >
+                      <span class="text-4xl mb-2">🗺️</span>
+                      <h4 class="font-pirate text-gold font-bold text-base">
+                        RAHASIA EMOSIKU
+                      </h4>
+                      <p class="text-[11px] text-amber-200/80 italic mt-1">
+                        Petualangan CASEL
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom Row: 2 Cards Centered -->
+              <div
+                class="flex flex-wrap items-center justify-center gap-6 md:gap-8 w-full"
+              >
+                <!-- KARTU 4: KECEWA -->
+                <div
+                  class="card-container perspective-1000 cursor-pointer"
+                  onclick="selectCard(4)"
+                >
+                  <div
+                    id="card-inner-4"
+                    class="relative w-full h-full duration-700 transform-style-3d shadow-xl rounded-2xl"
+                  >
+                    <div
+                      class="absolute inset-0 backface-hidden bg-gradient-to-b from-purple-100 via-purple-200 to-rose-200 border-4 border-gold rounded-2xl p-3.5 flex flex-col justify-between shadow-inner"
+                    >
+                      <div
+                        class="flex justify-between items-center border-b border-purple-400/40 pb-1.5"
+                      >
+                        <span
+                          class="bg-purple-800 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md font-pirate tracking-wider"
+                          >KARTU 04</span
+                        >
+                        <span
+                          class="text-[10px] font-bold text-purple-900 uppercase tracking-tight"
+                          >Keterampilan Berelasi</span
+                        >
+                      </div>
+                      <div class="text-center my-1">
+                        <h3
+                          class="font-pirate text-lg font-black text-purple-950 tracking-wide"
+                        >
+                          KECEWA
+                        </h3>
+                      </div>
+                      <div class="my-auto flex flex-col items-center">
+                        <div
+                          class="w-20 h-20 bg-purple-300 rounded-full flex items-center justify-center border-4 border-purple-600 shadow-md"
+                        >
+                          <span class="text-4xl">📜</span>
+                        </div>
+                        <p
+                          class="text-[11px] text-purple-950 font-semibold mt-2.5 text-center leading-tight"
+                        >
+                          Kehilangan Peta Harta
+                        </p>
+                      </div>
+                      <div
+                        class="text-center border-t border-purple-400/40 pt-2"
+                      >
+                        <span
+                          class="inline-block bg-pirateBrown text-amber-100 font-bold text-[11px] px-3 py-1 rounded-full shadow border border-gold/50"
+                        >
+                          BUKA KARTU ➔
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      class="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-b from-pirateBrown to-pirateDark border-4 border-gold rounded-2xl p-4 flex flex-col justify-center items-center text-center text-amber-100"
+                    >
+                      <span class="text-4xl mb-2">🗺️</span>
+                      <h4 class="font-pirate text-gold font-bold text-base">
+                        RAHASIA EMOSIKU
+                      </h4>
+                      <p class="text-[11px] text-amber-200/80 italic mt-1">
+                        Petualangan CASEL
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- KARTU 5: BINGUNG -->
+                <div
+                  class="card-container perspective-1000 cursor-pointer"
+                  onclick="selectCard(5)"
+                >
+                  <div
+                    id="card-inner-5"
+                    class="relative w-full h-full duration-700 transform-style-3d shadow-xl rounded-2xl"
+                  >
+                    <div
+                      class="absolute inset-0 backface-hidden bg-gradient-to-b from-orange-100 via-orange-200 to-amber-300 border-4 border-gold rounded-2xl p-3.5 flex flex-col justify-between shadow-inner"
+                    >
+                      <div
+                        class="flex justify-between items-center border-b border-orange-400/40 pb-1.5"
+                      >
+                        <span
+                          class="bg-orange-800 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md font-pirate tracking-wider"
+                          >KARTU 05</span
+                        >
+                        <span
+                          class="text-[10px] font-bold text-orange-950 uppercase tracking-tight"
+                          >Pengambilan Keputusan</span
+                        >
+                      </div>
+                      <div class="text-center my-1">
+                        <h3
+                          class="font-pirate text-lg font-black text-orange-950 tracking-wide"
+                        >
+                          BINGUNG
+                        </h3>
+                      </div>
+                      <div class="my-auto flex flex-col items-center">
+                        <div
+                          class="w-20 h-20 bg-orange-300 rounded-full flex items-center justify-center border-4 border-amber-600 shadow-md"
+                        >
+                          <span class="text-4xl">🔀</span>
+                        </div>
+                        <p
+                          class="text-[11px] text-orange-950 font-semibold mt-2.5 text-center leading-tight"
+                        >
+                          Memilih Dua Jalur Peta
+                        </p>
+                      </div>
+                      <div
+                        class="text-center border-t border-orange-400/40 pt-2"
+                      >
+                        <span
+                          class="inline-block bg-pirateBrown text-amber-100 font-bold text-[11px] px-3 py-1 rounded-full shadow border border-gold/50"
+                        >
+                          BUKA KARTU ➔
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      class="absolute inset-0 backface-hidden rotate-y-180 bg-gradient-to-b from-pirateBrown to-pirateDark border-4 border-gold rounded-2xl p-4 flex flex-col justify-center items-center text-center text-amber-100"
+                    >
+                      <span class="text-4xl mb-2">🗺️</span>
+                      <h4 class="font-pirate text-gold font-bold text-base">
+                        RAHASIA EMOSIKU
+                      </h4>
+                      <p class="text-[11px] text-amber-200/80 italic mt-1">
+                        Petualangan CASEL
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 3: FORM PERTANYAAN & CERITA EMOSI -->
+        <div
+          id="viewQuestion"
+          class="hidden w-full max-w-2xl bg-parchment border-4 border-gold rounded-3xl p-6 md:p-8 shadow-2xl relative my-auto"
+        >
+          <div
+            class="flex justify-between items-start mb-4 border-b-2 border-gold/40 pb-4"
+          >
+            <div>
+              <span
+                id="qCardBadge"
+                class="inline-block font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-2"
+              ></span>
+              <h3
+                id="qCardTitle"
+                class="font-pirate text-2xl font-black text-pirateBrown"
+              ></h3>
+            </div>
+            <button
+              onclick="backToDeck()"
+              class="bg-pirateBrown hover:bg-pirateDark text-amber-100 font-bold text-xs px-3 py-2 rounded-xl transition shadow flex items-center gap-1"
+            >
+              <span>🗺️</span> Kembali ke Peta
+            </button>
+          </div>
+
+          <div
+            class="bg-amber-50/90 border-2 border-gold/70 rounded-2xl p-4 mb-6 shadow-inner"
+          >
+            <p
+              class="text-xs uppercase font-extrabold text-gold tracking-wider mb-1"
+            >
+              Tantangan Kapten:
+            </p>
+            <p
+              id="qCardText"
+              class="font-pirate text-base md:text-lg text-pirateBrown font-bold leading-relaxed"
+            ></p>
+          </div>
+
+          <form id="formStory" onsubmit="submitStory(event)" class="space-y-4">
+            <div>
+              <label
+                class="block text-xs font-bold uppercase tracking-wider text-pirateBrown mb-1"
+                >Tuliskan Cerita Emosimu:</label
+              >
+              <textarea
+                id="inputStory"
+                rows="5"
+                required
+                placeholder="Tuliskan pengalaman dan jawabanmu di sini secara jujur..."
+                class="w-full bg-white/90 border-2 border-gold/70 rounded-xl p-4 text-pirateBrown font-medium focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/30"
+              ></textarea>
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-emerald-600 via-emerald-700 to-green-700 hover:from-green-700 hover:to-emerald-600 text-white font-pirate font-bold text-base md:text-lg py-3.5 rounded-xl shadow-lg border-2 border-emerald-300 transform hover:-translate-y-0.5 transition active:translate-y-0 flex items-center justify-center gap-2"
+            >
+              <span>✉️</span> KIRIM CERITA KE KAPTEN
+            </button>
+          </form>
+        </div>
+
+        <!-- VIEW 4: PESAN SUKSES / SELESAI -->
+        <div
+          id="viewSuccess"
+          class="hidden w-full max-w-lg bg-parchment border-4 border-gold rounded-3xl p-8 shadow-2xl text-center relative my-auto"
+        >
+          <div class="text-6xl mb-4 animate-bounce">🏆</div>
+          <h3
+            class="font-pirate text-2xl md:text-3xl font-black text-pirateBrown mb-2"
+          >
+            HARTA KARUN DITEMUKAN!
+          </h3>
+          <p
+            id="successMessage"
+            class="text-sm md:text-base text-amber-950 font-medium mb-6 bg-amber-50 border border-gold/40 p-4 rounded-2xl shadow-inner"
+          ></p>
+          <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onclick="backToDeck()"
+              class="bg-gold hover:bg-amber-600 text-pirateDark font-bold py-3 px-6 rounded-xl shadow transition"
+            >
+              🗺️ Pilih Kartu Lainnya
+            </button>
+            <button
+              onclick="openTeacherDashboard()"
+              class="bg-pirateBrown hover:bg-pirateDark text-amber-100 font-bold py-3 px-6 rounded-xl shadow transition"
+            >
+              📜 Lihat Buku Kapten
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 5: DASHBOARD GURU (BUKU CATATAN KAPTEN) -->
+        <div
+          id="viewDashboard"
+          class="hidden w-full max-w-5xl bg-parchment border-4 border-gold rounded-3xl p-6 md:p-8 shadow-2xl my-auto"
+        >
+          <div
+            class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b-2 border-gold/40 pb-4"
+          >
+            <div>
+              <h2 class="font-pirate text-2xl font-black text-pirateBrown">
+                📜 BUKU CATATAN KAPTEN (DASHBOARD GURU)
+              </h2>
+              <p class="text-xs text-amber-900 mt-1">
+                Rekapitulasi cerita emosi kru berdasarkan 5 kompetensi CASEL.
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <button
+                onclick="exportData()"
+                class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3 py-2 rounded-xl transition shadow flex items-center gap-1"
+              >
+                <span>📥</span> Ekspor CSV
+              </button>
+              <button
+                onclick="clearAllData()"
+                class="bg-crimson hover:bg-red-800 text-white font-bold text-xs px-3 py-2 rounded-xl transition shadow flex items-center gap-1"
+              >
+                <span>🗑️</span> Reset Data
+              </button>
+              <button
+                onclick="backToDeck()"
+                class="bg-pirateBrown hover:bg-pirateDark text-amber-100 font-bold text-xs px-3 py-2 rounded-xl transition shadow flex items-center gap-1"
+              >
+                <span>🔙</span> Keluar
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Search Controls -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label
+                class="block text-xs font-bold uppercase text-pirateBrown mb-1"
+                >Cari Nama Kru / Kelas / Jawaban:</label
+              >
+              <input
+                type="text"
+                id="searchQuery"
+                oninput="filterDashboard()"
+                placeholder="Ketik nama atau kata kunci..."
+                class="w-full bg-white/90 border-2 border-gold/60 rounded-xl px-3 py-2 text-xs font-semibold text-pirateBrown focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-bold uppercase text-pirateBrown mb-1"
+                >Filter Emosi / Kompetensi CASEL:</label
+              >
+              <select
+                id="filterCard"
+                onchange="filterDashboard()"
+                class="w-full bg-white/90 border-2 border-gold/60 rounded-xl px-3 py-2 text-xs font-semibold text-pirateBrown focus:outline-none focus:border-gold"
+              >
+                <option value="">Semua Kartu (1 - 5)</option>
+                <option value="SENANG">1. SENANG (Kesadaran Diri)</option>
+                <option value="CEMAS">2. CEMAS (Manajemen Diri)</option>
+                <option value="PEDULI">3. PEDULI (Kesadaran Sosial)</option>
+                <option value="KECEWA">
+                  4. KECEWA (Keterampilan Berelasi)
+                </option>
+                <option value="BINGUNG">
+                  5. BINGUNG (Pengambilan Keputusan)
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Data Table -->
+          <div
+            class="bg-white/90 border-2 border-gold/60 rounded-2xl overflow-hidden shadow-inner max-h-96 overflow-y-auto"
+          >
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr
+                  class="bg-pirateBrown text-amber-100 text-xs font-pirate border-b-2 border-gold"
+                >
+                  <th class="p-3">Waktu</th>
+                  <th class="p-3">Kru & Kelas</th>
+                  <th class="p-3">Emosi & CASEL</th>
+                  <th class="p-3">Pertanyaan Kapten</th>
+                  <th class="p-3">Jawaban / Cerita Emosi</th>
+                </tr>
+              </thead>
+              <tbody
+                id="dashboardTableBody"
+                class="divide-y divide-gold/20 text-xs text-pirateBrown"
+              >
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Storage Info Note -->
+          <div
+            class="mt-4 bg-amber-50 border border-gold/50 rounded-xl p-3 text-xs text-amber-900 leading-relaxed"
+          >
+            <strong>Catatan Penyimpanan Data:</strong> Data cerita disimpan pada
+            database online Supabase. Hanya akun guru yang sudah login yang
+            dapat melihat, mengekspor, dan menghapus seluruh catatan.
+          </div>
+        </div>
+      </main>
+
+      <!-- FOOTER -->
+      <footer
+        class="bg-pirateDark/90 border-t-2 border-gold/50 text-center py-3 text-xs text-amber-200/70 font-pirate"
+      >
+        <span
+          >© 2026 • Petualangan Pembelajaran Sosial Emosional (PSE) CASEL</span
+        >
+      </footer>
+    </div>
+
+    <!-- CUSTOM NOTIFICATION MODAL -->
+    <div
+      id="customModal"
+      class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+    >
+      <div
+        class="bg-parchment border-4 border-gold rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl"
+      >
+        <div id="modalIcon" class="text-4xl mb-2">⚓</div>
+        <h4
+          id="modalTitle"
+          class="font-pirate text-xl font-bold text-pirateBrown mb-2"
+        >
+          Pesan Kapten
+        </h4>
+        <p id="modalText" class="text-xs text-amber-950 font-medium mb-6"></p>
+        <button
+          onclick="closeModal()"
+          class="w-full bg-gold hover:bg-amber-600 text-pirateDark font-pirate font-bold py-3 rounded-xl shadow border border-amber-300"
+        >
+          FAHAMI, KAPTEN!
+        </button>
+      </div>
+    </div>
+
+    <!-- KONFIGURASI SUPABASE: isi URL dan anon key dari Project Settings > API -->
+    <script>
+      const SUPABASE_URL = "https://ruvuniemcrtwvxvqdmlk.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "sb_publishable_MwJYat05I0QP3D6O9zITOw_Y7jpFF2d";
+      const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+      );
+    </script>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+      // Data Kartu & Pertanyaan CASEL
+      const cardsData = {
+        1: {
+          title: "SENANG",
+          casel: "Kesadaran Diri",
+          badgeBg: "bg-amber-500 text-pirateDark",
+          question:
+            "Harta apa yang membuatmu merasa senang hari ini? Ceritakan pengalamanmu!",
+        },
+        2: {
+          title: "CEMAS",
+          casel: "Manajemen Diri",
+          badgeBg: "bg-blue-600 text-white",
+          question:
+            "Saat menghadapi badai kecemasan, apa yang kamu lakukan untuk menenangkan dirimu?",
+        },
+        3: {
+          title: "PEDULI",
+          casel: "Kesadaran Sosial",
+          badgeBg: "bg-teal-600 text-white",
+          question:
+            "Jika teman seperjalananmu sedang sedih, bagaimana kamu memahami dan membantunya?",
+        },
+        4: {
+          title: "KECEWA",
+          casel: "Keterampilan Berelasi",
+          badgeBg: "bg-purple-700 text-white",
+          question:
+            "Jika temanmu mengecewakanmu, bagaimana kamu menyampaikan perasaanmu tanpa menyakitinya?",
+        },
+        5: {
+          title: "BINGUNG",
+          casel: "Pengambilan Keputusan yang Bertanggung Jawab",
+          badgeBg: "bg-orange-600 text-white",
+          question:
+            "Jika kamu harus memilih antara mengikuti ajakan teman atau melakukan hal yang benar, keputusan apa yang akan kamu ambil? Mengapa?",
+        },
+      };
+
+      let currentStudent = { name: "", studentClass: "" };
+      let selectedCharAt = null;
+
+      // Inisialisasi saat halaman dimuat
+      window.onload = function () {
+        const savedStudent = localStorage.getItem("pirate_student");
+        if (savedStudent) {
+          currentStudent = JSON.parse(savedStudent);
+          document.getElementById("inputName").value = currentStudent.name;
+          document.getElementById("inputClass").value =
+            currentStudent.studentClass;
+          document.getElementById("navStudentName").innerText =
+            currentStudent.name;
+          document.getElementById("navStudentClass").innerText =
+            currentStudent.studentClass;
+          document.getElementById("displayStudentName").innerText =
+            currentStudent.name;
+          document.getElementById("userNavInfo").classList.remove("hidden");
+        }
+      };
+
+      // Fungsi Login Kru
+      function handleLogin(event) {
+        event.preventDefault();
+        const name = document.getElementById("inputName").value.trim();
+        const studentClass = document.getElementById("inputClass").value.trim();
+
+        if (!name || !studentClass) {
+          showModal(
+            "Peringatan Kapten",
+            "Mohon isi nama dan kelas terlebih dahulu!",
+          );
+          return;
+        }
+
+        currentStudent = { name, studentClass };
+        localStorage.setItem("pirate_student", JSON.stringify(currentStudent));
+
+        // Update UI Nav & Banner
+        document.getElementById("navStudentName").innerText = name;
+        document.getElementById("navStudentClass").innerText = studentClass;
+        document.getElementById("displayStudentName").innerText = name;
+        document.getElementById("userNavInfo").classList.remove("hidden");
+
+        // Ganti View ke Deck Peta
+        switchView("viewDeck");
+      }
+
+      function logoutStudent() {
+        localStorage.removeItem("pirate_student");
+        currentStudent = { name: "", studentClass: "" };
+        document.getElementById("userNavInfo").classList.add("hidden");
+        switchView("viewLogin");
+      }
+
+      // Navigasi Tampilan (Views)
+      function switchView(viewId) {
+        const views = [
+          "viewLogin",
+          "viewDeck",
+          "viewQuestion",
+          "viewSuccess",
+          "viewDashboard",
+        ];
+        views.forEach((id) => {
+          document.getElementById(id).classList.add("hidden");
+        });
+        document.getElementById(viewId).classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // Pilih Kartu & Animasi Membalik Kartu 3D
+      function selectCard(cardNum) {
+        selectedCharAt = cardNum;
+        const cardInner = document.getElementById(`card-inner-${cardNum}`);
+
+        // Tambahkan rotasi 3D 180deg
+        cardInner.classList.add("rotate-y-180");
+
+        setTimeout(() => {
+          // Reset rotasi kartu setelah transisi
+          cardInner.classList.remove("rotate-y-180");
+
+          // Set konten pertanyaan
+          const data = cardsData[cardNum];
+          document.getElementById("qCardBadge").innerText =
+            `${data.title} • ${data.casel}`;
+          document.getElementById("qCardBadge").className =
+            `inline-block font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-2 ${data.badgeBg}`;
+          document.getElementById("qCardTitle").textContent =
+            `KARTU EMOSI: ${data.title}`;
+          document.getElementById("qCardText").textContent = data.question;
+          document.getElementById("inputStory").value = "";
+
+          switchView("viewQuestion");
+        }, 600); // Durasi animasi 0.6s
+      }
+
+      function backToDeck() {
+        if (!currentStudent.name) {
+          switchView("viewLogin");
+        } else {
+          switchView("viewDeck");
+        }
+      }
+
+      // Kirim cerita ke database Supabase
+      async function submitStory(event) {
+        event.preventDefault();
+        const storyText = document.getElementById("inputStory").value.trim();
+
+        if (!storyText) {
+          showModal(
+            "Peringatan Kapten",
+            "Cerita emosi tidak boleh kosong, Kapten!",
+          );
+          return;
+        }
+        if (
+          !currentStudent.name ||
+          !currentStudent.studentClass ||
+          !selectedCharAt
+        ) {
+          showModal(
+            "Peringatan Kapten",
+            "Silakan masukkan nama dan kelas, lalu pilih kartu emosi.",
+          );
+          return;
+        }
+
+        const data = cardsData[selectedCharAt];
+        const newRecord = {
+          name: currentStudent.name,
+          student_class: currentStudent.studentClass,
+          card_number: selectedCharAt,
+          emotion: data.title,
+          casel: data.casel,
+          question: data.question,
+          story: storyText,
+        };
+
+        const submitButton = document.querySelector(
+          '#formStory button[type="submit"]',
+        );
+        submitButton.disabled = true;
+        submitButton.textContent = "⏳ MENYIMPAN CERITA...";
+        const { error } = await supabaseClient
+          .from("emotion_stories")
+          .insert([newRecord]);
+        submitButton.disabled = false;
+        submitButton.innerHTML = "<span>✉️</span> KIRIM CERITA KE KAPTEN";
+
+        if (error) {
+          console.error("Supabase insert error:", error);
+          showModal(
+            "Cerita Belum Tersimpan",
+            "Database belum menerima cerita. Periksa konfigurasi Supabase dan koneksi internet, lalu coba lagi.",
+          );
+          return;
+        }
+
+        document.getElementById("successMessage").innerHTML =
+          `Petualangan berhasil, <strong>${escapeHtml(currentStudent.name)}</strong>! Terima kasih telah berani mengenali dan menceritakan emosimu pada kartu <strong>${escapeHtml(data.title)} (${escapeHtml(data.casel)})</strong>. Ceritamu telah tersimpan di database!`;
+        switchView("viewSuccess");
+      }
+
+      // Dashboard guru hanya dapat dibuka setelah login akun guru Supabase
+      async function openTeacherDashboard() {
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+        if (!session) {
+          const email = prompt("Email akun guru:");
+          if (!email) return;
+          const password = prompt("Password akun guru:");
+          if (!password) return;
+          const { error } = await supabaseClient.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (error) {
+            showModal(
+              "Login Guru Gagal",
+              "Email atau password salah, atau akun guru belum dibuat di Supabase.",
+            );
+            return;
+          }
+        }
+        switchView("viewDashboard");
+        await renderDashboardTable();
+      }
+
+      async function renderDashboardTable() {
+        const tbody = document.getElementById("dashboardTableBody");
+        const searchQuery = document
+          .getElementById("searchQuery")
+          .value.toLowerCase()
+          .trim();
+        const filterCard = document.getElementById("filterCard").value;
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="p-6 text-center">Memuat data dari database...</td></tr>';
+
+        const { data: allStories, error } = await supabaseClient
+          .from("emotion_stories")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Supabase select error:", error);
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="p-6 text-center">Gagal mengambil data. Pastikan akun guru sudah login dan kebijakan database sudah dipasang.</td></tr>';
+          return;
+        }
+
+        const filtered = (allStories || []).filter((item) => {
+          const matchSearch =
+            (item.name || "").toLowerCase().includes(searchQuery) ||
+            (item.student_class || "").toLowerCase().includes(searchQuery) ||
+            (item.story || "").toLowerCase().includes(searchQuery) ||
+            (item.question || "").toLowerCase().includes(searchQuery);
+          const matchCard = filterCard === "" || item.emotion === filterCard;
+          return matchSearch && matchCard;
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="5" class="p-6 text-center text-amber-900 italic">Belum ada catatan cerita kru yang ditemukan.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = filtered
+          .map((item) => {
+            const timestamp = item.created_at
+              ? new Date(item.created_at).toLocaleString("id-ID", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })
+              : "-";
+            return `
+                <tr class="hover:bg-amber-50/80 transition">
+                    <td class="p-3 font-mono text-[11px] text-amber-900">${escapeHtml(timestamp)}</td>
+                    <td class="p-3 font-bold text-pirateBrown">${escapeHtml(item.name)}<br><span class="text-[10px] text-amber-800 font-normal">${escapeHtml(item.student_class)}</span></td>
+                    <td class="p-3"><span class="bg-gold/20 text-pirateBrown font-bold text-[10px] px-2 py-0.5 rounded border border-gold/40">${escapeHtml(item.emotion)}</span><br><span class="text-[10px] text-amber-900 italic">${escapeHtml(item.casel)}</span></td>
+                    <td class="p-3 text-amber-950 max-w-xs text-[11px]">${escapeHtml(item.question)}</td>
+                    <td class="p-3 text-pirateBrown font-medium max-w-md text-xs bg-amber-50/50 rounded p-2 leading-relaxed">${escapeHtml(item.story)}</td>
+                </tr>`;
+          })
+          .join("");
+      }
+
+      function filterDashboard() {
+        renderDashboardTable();
+      }
+
+      // Ekspor data database ke CSV (khusus guru yang sudah login)
+      async function exportData() {
+        const { data: allStories, error } = await supabaseClient
+          .from("emotion_stories")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) {
+          showModal(
+            "Buku Kapten",
+            "Data tidak dapat diambil. Pastikan guru sudah login.",
+          );
+          return;
+        }
+        if (!allStories || allStories.length === 0) {
+          showModal("Buku Kapten", "Belum ada data cerita untuk diekspor!");
+          return;
+        }
+
+        const csvCell = (value) =>
+          '"' + String(value ?? "").replace(/"/g, '""') + '"';
+        const rows = [
+          [
+            "Waktu",
+            "Nama Kru",
+            "Kelas",
+            "Emosi",
+            "Kompetensi CASEL",
+            "Pertanyaan",
+            "Cerita Emosi",
+          ],
+          ...allStories.map((row) => [
+            row.created_at
+              ? new Date(row.created_at).toLocaleString("id-ID")
+              : "",
+            row.name,
+            row.student_class,
+            row.emotion,
+            row.casel,
+            row.question,
+            row.story,
+          ]),
+        ];
+        const csvContent =
+          "\ufeff" + rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "buku_catatan_kapten_pse.csv";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      async function clearAllData() {
+        if (
+          !confirm(
+            "Apakah Kapten yakin ingin menghapus seluruh rekam jejak cerita kru? Tindakan ini tidak dapat dibatalkan.",
+          )
+        )
+          return;
+        const { error } = await supabaseClient
+          .from("emotion_stories")
+          .delete()
+          .not("id", "is", null);
+        if (error) {
+          console.error("Supabase delete error:", error);
+          showModal(
+            "Buku Kapten",
+            "Data gagal dihapus. Pastikan akun guru sudah login dan kebijakan DELETE tersedia.",
+          );
+          return;
+        }
+        await renderDashboardTable();
+        showModal(
+          "Buku Kapten",
+          "Seluruh rekam jejak berhasil dibersihkan dari database.",
+        );
+      }
+
+      // Utility Modal Notifikasi
+      function showModal(title, text) {
+        document.getElementById("modalTitle").innerText = title;
+        document.getElementById("modalText").innerText = text;
+        document.getElementById("customModal").classList.remove("hidden");
+      }
+
+      function closeModal() {
+        document.getElementById("customModal").classList.add("hidden");
+      }
+
+      function escapeHtml(text) {
+        const map = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        };
+        return text.replace(/[&<>"']/g, (m) => map[m]);
+      }
+    </script>
+  </body>
+</html>
